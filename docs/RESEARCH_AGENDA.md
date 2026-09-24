@@ -2,9 +2,21 @@
 
 ## Primary hypothesis
 
-A discrete semantic IR can transfer task-relevant information between heterogeneous pretrained LLMs more efficiently than unconstrained natural-language messages.
+A discrete reasoning IR can transfer **reusable knowledge and inference structure** between heterogeneous pretrained LLMs more efficiently than unconstrained natural-language messages, while preserving the receiver's ability to derive novel conclusions.
 
 We should treat this as a falsifiable hypothesis.
+
+## RQ0 — Can the representation support continued reasoning?
+
+The sender must not see the eventual query. The receiver must derive a novel answer from the transmitted state.
+
+Measure:
+- answer accuracy by proof depth;
+- symbolic execution accuracy;
+- LLM-vs-symbolic receiver gap;
+- proof dependency validity where available.
+
+A representation that only paraphrases conclusions fails this requirement.
 
 ## RQ1 — Can models learn the protocol in context?
 
@@ -106,13 +118,13 @@ Measure recovery cost and whether models can avoid falling back to full English.
 - identify strongest baselines;
 - collect protocol-design lessons.
 
-### M1 — textual IR prototype
-- grammar;
-- parser;
-- canonical serializer;
-- ~32 structural operators;
-- small manually seeded semantic atom set;
-- literal escape.
+### M1 — reasoning IR prototype
+- MSP-R0 facts + explicit negation;
+- variables and conjunctive Horn-like rules;
+- deterministic parser and forward-chainer;
+- TRUE / FALSE / UNKNOWN / BOTH query semantics;
+- proof dependency capture;
+- concise English and JSON baselines.
 
 ### M2 — benchmark harness
 - equivalent-message dataset;
