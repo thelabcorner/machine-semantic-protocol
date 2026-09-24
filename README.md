@@ -69,7 +69,7 @@ This is **not** intended to be encrypted English, shorthand prose, or a fixed on
 The first prototype is intentionally small. It uses [Inspect AI](https://inspect.aisi.org.uk/) as the execution/logging substrate and evaluates a two-model communication channel:
 
 ```text
-source meaning -> sender -> wire message -> receiver -> canonical semantic object
+reasoning state -> sender -> wire program -> receiver -> novel deduction
 ```
 
 Three conditions are currently compared:
@@ -95,6 +95,44 @@ inspect eval evals/semantic_transfer.py \
 ```
 
 During development, add `--limit 3` to keep runs cheap.
+
+
+### Reasoning-transfer prototype
+
+The active prototype now tests **reasoning preservation**, not just semantic reconstruction.
+
+The sender sees a theory (facts + general rules) but **does not see the eventual query**. It must transmit a reusable reasoning state. Only after transmission does the receiver receive a novel query:
+
+```text
+facts + rules
+    |
+ sender
+    |
+ wire program        query hidden from sender
+    |                       |
+    +-----------+-----------+
+                |
+             receiver
+                |
+        TRUE / FALSE / UNKNOWN
+```
+
+MSP-R0 is a deliberately small Horn-clause-like IR:
+
+```text
++red(key)
+r1:red(?x)=>hot(?x)
+r2:hot(?x)=>!safe_touch(?x)
+```
+
+A separate deterministic forward-chainer can execute the same MSP-R0 message. This gives two measurements:
+
+1. **LLM receiver:** can another model reason directly over the machine-native representation?
+2. **Symbolic receiver:** did the sender encode a logically executable state correctly?
+
+The second measurement separates translation failures from reasoning failures.
+
+See [Reasoning IR](docs/REASONING_IR.md) and [Reasoning benchmark](docs/REASONING_BENCHMARK.md).
 
 See [Prototype design](docs/PROTOTYPE.md) and [eval harness survey](docs/EVAL_HARNESS_SURVEY.md).
 
