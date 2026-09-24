@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Mapping, Sequence
 
 MSP_R0_SPEC = """MSP-R0 transmits a reusable logical theory, not an answer.
 
@@ -90,8 +91,21 @@ def get_reasoning_condition(name: str) -> ReasoningCondition:
         raise ValueError(f"unknown reasoning condition {name!r}; choose one of: {valid}") from exc
 
 
-def build_reasoning_sender_prompt(condition: str, theory: str) -> str:
+def format_vocabulary(vocabulary: Mapping[str, Sequence[str]] | None) -> str:
+    if not vocabulary:
+        return "No explicit shared symbol table."
+    predicates = ", ".join(vocabulary.get("predicates", ())) or "(none)"
+    constants = ", ".join(vocabulary.get("constants", ())) or "(none)"
+    return f"Predicates: {predicates}\nConstants: {constants}"
+
+
+def build_reasoning_sender_prompt(
+    condition: str,
+    theory: str,
+    vocabulary: Mapping[str, Sequence[str]] | None = None,
+) -> str:
     spec = get_reasoning_condition(condition).sender_spec
+    symbols = format_vocabulary(vocabulary)
     return f"""You are the sender in a reasoning-state communication benchmark.
 
 You see THEORY but you will never see the receiver's later query.
@@ -102,14 +116,26 @@ Do not invent facts.
 WIRE FORMAT
 {spec}
 
+SHARED SYMBOL TABLE
+{symbols}
+
+For structured formats, use the shared predicate names and constants exactly.
+The symbol table defines names only; it does not state which facts are true.
+
 THEORY
 {theory}
 
 WIRE"""
 
 
-def build_reasoning_receiver_prompt(condition: str, wire: str, query: str) -> str:
+def build_reasoning_receiver_prompt(
+    condition: str,
+    wire: str,
+    query: str,
+    vocabulary: Mapping[str, Sequence[str]] | None = None,
+) -> str:
     description = get_reasoning_condition(condition).receiver_description
+    symbols = format_vocabulary(vocabulary)
     return f"""You are the receiver in a reasoning-state communication benchmark.
 
 Reason only from WIRE and answer QUERY.
@@ -125,6 +151,9 @@ Rules are directional. Do not use contraposition.
 
 WIRE FORMAT
 {description}
+
+SHARED SYMBOL TABLE
+{symbols}
 
 WIRE
 {wire}
