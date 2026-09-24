@@ -135,3 +135,24 @@ A useful negative result would be:
 - gains vanish beyond trivial one-hop rules.
 
 Any of those outcomes should change the design before more features are added.
+
+
+## Shared symbol table
+
+The controlled benchmark gives both endpoints a small shared symbol table containing only:
+
+- predicate names and arities;
+- constant/entity identifiers.
+
+Example:
+
+```text
+Predicates: red/1, hot/1, unsafe/1
+Constants: key
+```
+
+The table does **not** reveal facts, rules, the query, or the answer.
+
+This prevents lexical choices such as `unsafe` vs `dangerous` from being mis-scored as logical failures. It is also an explicit prototype of MSP's shared semantic-atom dictionary.
+
+The harness records `vocabulary_bytes` separately. In a warm/shared-dictionary regime those bytes can be amortized; in a cold-start comparison they must be counted.
