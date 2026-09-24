@@ -20,15 +20,40 @@ from inspect_ai.model import get_model
 from inspect_ai.scorer import CORRECT, INCORRECT, Score, Target, accuracy, scorer, stderr
 from inspect_ai.solver import Generate, Solver, TaskState, solver
 
-from msp.reasoner import ParseError, reason
+from msp.reasoner import ParseError, Program, parse_program, reason
 from msp.reasoning import (
     build_reasoning_receiver_prompt,
     build_reasoning_sender_prompt,
+    format_vocabulary,
     get_reasoning_condition,
 )
 
 DATASET = Path(__file__).resolve().parents[1] / "data" / "reasoning_transfer.jsonl"
 _VALID_ANSWERS = ("TRUE", "FALSE", "UNKNOWN", "BOTH")
+
+
+def _atoms(program: Program):
+    for fact in program.facts:
+        yield fact
+    for rule in program.rules:
+        yield from rule.body
+        yield rule.head
+
+
+def _vocabulary_from_gold(record: dict) -> dict[str, list[str]]:
+    """Expose only symbol names/arities/constants, never gold facts or rules."""
+    program = parse_program(record["gold_msp"])
+    predicates = sorted({
+        f"{atom.predicate}/{len(atom.args)}"
+        for atom in _atoms(program)
+    })
+    constants = sorted({
+        arg
+        for atom in _atoms(program)
+        for arg in atom.args
+        if not arg.startswith("?")
+    })
+    return {"predicates": predicates, "constants": constants}
 
 
 def _record_to_sample(record: dict) -> Sample:
@@ -40,6 +65,7 @@ def _record_to_sample(record: dict) -> Sample:
             "query": record["query"],
             "query_atom": record["query_atom"],
             "depth": record["depth"],
+            "vocabulary": _vocabulary_from_gold(record),
             "tags": record.get("tags", []),
         },
     )
@@ -64,7 +90,11 @@ def communicate_and_reason(condition: str, receiver: str = "llm") -> Solver:
 
     async def solve(state: TaskState, generate: Generate) -> TaskState:
         sender_model = get_model(role="sender")
-        sender_prompt = build_reasoning_sender_prompt(config.name, state.input_text)
+        sender_prompt = build_reasoning_sender_prompt(
+            config.name,
+            state.input_text,
+            state.metadata["vocabulary"],
+        )
         sender_output = await sender_model.generate(sender_prompt)
         wire = sender_output.completion.strip()
 
@@ -73,6 +103,8 @@ def communicate_and_reason(condition: str, receiver: str = "llm") -> Solver:
         state.store.set("wire", wire)
         state.store.set("wire_bytes", len(wire.encode("utf-8")))
         state.store.set("sender_instruction_bytes", len(config.sender_spec.encode("utf-8")))
+        vocabulary_text = format_vocabulary(state.metadata["vocabulary"])
+        state.store.set("vocabulary_bytes", len(vocabulary_text.encode("utf-8")))
 
         if receiver == "symbolic":
             try:
@@ -91,6 +123,7 @@ def communicate_and_reason(condition: str, receiver: str = "llm") -> Solver:
             config.name,
             wire,
             state.metadata["query"],
+            state.metadata["vocabulary"],
         )
         receiver_output = await receiver_model.generate(receiver_prompt)
         state.store.set(
@@ -121,6 +154,7 @@ def reasoning_answer() -> object:
             "wire": state.store.get("wire"),
             "wire_bytes": state.store.get("wire_bytes"),
             "sender_instruction_bytes": state.store.get("sender_instruction_bytes"),
+            "vocabulary_bytes": state.store.get("vocabulary_bytes"),
             "depth": state.metadata["depth"],
             "query_atom": state.metadata["query_atom"],
         }
