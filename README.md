@@ -39,6 +39,7 @@ The protocol is intended to be:
 ## Repository map
 
 - [Literature map](docs/LITERATURE_MAP.md) — prior work and adjacent research.
+- [Prior-art matrix](docs/PRIOR_ART_MATRIX.md) — comparison of adjacent approaches and the gap under test.
 - [Protocol hypothesis](docs/PROTOCOL_HYPOTHESIS.md) — proposed architecture and design space.
 - [Research agenda](docs/RESEARCH_AGENDA.md) — falsifiable questions and milestones.
 - [Experimental plan](docs/EXPERIMENTS.md) — benchmarks and measurements.
