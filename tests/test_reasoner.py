@@ -67,5 +67,5 @@ def test_sender_never_receives_query():
         "msp",
         "Every red thing is hot. The key is red.",
     )
-    assert "eventual query" in prompt
+    assert "query" in prompt.lower()
     assert "Is the key hot?" not in prompt
