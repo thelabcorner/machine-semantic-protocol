@@ -63,6 +63,41 @@ The actual wire representation need not contain English labels. Operators, seman
 
 This is **not** intended to be encrypted English, shorthand prose, or a fixed ontology of every possible concept. The target is closer to a semantic bytecode or IR.
 
+
+## Prototype
+
+The first prototype is intentionally small. It uses [Inspect AI](https://inspect.aisi.org.uk/) as the execution/logging substrate and evaluates a two-model communication channel:
+
+```text
+source meaning -> sender -> wire message -> receiver -> canonical semantic object
+```
+
+Three conditions are currently compared:
+
+- `english` — aggressively concise natural English;
+- `json` — minified short-key structured JSON;
+- `msp` — MSP-v0 numeric semantic opcodes.
+
+Inspect records model-role token usage, cost, and timing. MSP additionally records wire bytes and shared protocol/schema overhead so we can distinguish **warm/shared-protocol efficiency** from **cold-start total cost**.
+
+Quick start:
+
+```bash
+python -m venv .venv
+# activate the environment, then:
+pip install -e ".[dev]"
+
+inspect eval evals/semantic_transfer.py \
+  -T condition=msp \
+  --model none \
+  --model-role sender=<provider>/<model> \
+  --model-role receiver=<provider>/<model>
+```
+
+During development, add `--limit 3` to keep runs cheap.
+
+See [Prototype design](docs/PROTOTYPE.md) and [eval harness survey](docs/EVAL_HARNESS_SURVEY.md).
+
 ## Status
 
 Early research / protocol design. No claim is made yet that the proposed approach outperforms natural-language communication. The purpose of this repository is to make that claim experimentally testable.

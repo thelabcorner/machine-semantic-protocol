@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "machine-semantic-protocol"
+version = "0.1.0"
+description = "Research prototype for discrete semantic communication between LLMs"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "GPL-3.0-or-later" }
+dependencies = [
+  "inspect-ai>=0.3.206",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["msp"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
