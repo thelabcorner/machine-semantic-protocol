@@ -87,8 +87,9 @@ python -m venv .venv
 # activate the environment, then:
 pip install -e ".[dev]"
 
-inspect eval evals/semantic_transfer.py \
+inspect eval evals/reasoning_transfer.py \
   -T condition=msp \
+  -T receiver=llm \
   --model none \
   --model-role sender=<provider>/<model> \
   --model-role receiver=<provider>/<model>
