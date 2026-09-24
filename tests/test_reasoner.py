@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 import pytest
 
 from msp.reasoner import ParseError, parse_program, reason
@@ -69,3 +72,13 @@ def test_sender_never_receives_query():
     )
     assert "query" in prompt.lower()
     assert "Is the key hot?" not in prompt
+
+
+def test_all_gold_reasoning_fixtures_execute_to_expected_answers():
+    dataset = Path(__file__).resolve().parents[1] / "data" / "reasoning_transfer.jsonl"
+    for line in dataset.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        result = reason(row["gold_msp"], row["query_atom"])
+        assert result.status == row["answer"], row["id"]
