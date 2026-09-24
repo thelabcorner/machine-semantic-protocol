@@ -6,6 +6,20 @@
 
 The repository name is intentionally broader: `machine-semantic-protocol`.
 
+## Current direction: reasoning state, not just semantic packets
+
+The initial semantic-packet design remains useful as a serialization layer, but it is no longer the endpoint.
+
+The protocol should primarily make **reasoning state portable**:
+
+```text
+knowledge + rules + assumptions + goals + derivations
+```
+
+A receiver should be able to derive something that the sender did not explicitly transmit as a conclusion.
+
+The first executable fragment is MSP-R0, documented in [REASONING_IR.md](REASONING_IR.md).
+
 ## Design thesis
 
 Natural language bundles several functions into one sequential stream:
@@ -198,3 +212,82 @@ But too much fixed structure can reduce:
 - adaptability.
 
 The protocol therefore likely needs a **small fixed algebra + learned/negotiated semantic vocabulary**, rather than either a completely fixed ontology or a completely unconstrained emergent language.
+
+
+## Reasoning architecture boundary
+
+MSP should own the **interchange layer for reasoning**, not attempt to replace every mature reasoning formalism.
+
+A staged architecture is:
+
+```text
+LLM latent state
+      |
+      v
+MSP reasoning state
+      |
+      +-- core Horn-like deduction
+      |
+      +-- typed extension: SMT / arithmetic / bitvectors / arrays
+      |
+      +-- typed extension: planning / actions / effects
+      |
+      +-- typed extension: richer theorem proving
+      |
+      v
+LLM or deterministic executor
+```
+
+The core stays small and portable.
+
+When a task needs a domain with mature solver semantics, MSP should carry a typed subproblem or reference an adapter rather than cloning the domain.
+
+Examples:
+
+- SMT-LIB-style adapter for satisfiability, arithmetic, arrays, strings, floating point, and bitvectors;
+- PDDL-style adapter for planning state, actions, preconditions, and effects;
+- future theorem-prover adapters when unrestricted quantification is genuinely required.
+
+This prevents "machine-native reasoning language" from turning into an accidental universal theorem prover.
+
+## Candidate reasoning-state operations
+
+These are design candidates, not all implemented in R0:
+
+```text
++P(a)                 assert explicit fact
++!P(a)                assert explicit negative fact
+r1:A(?x)&B(?x)=>C(?x) reusable rule
+?C(a)                 goal/query
+~P(a)                 scoped assumption
+|-C(a)[r1,f1,f2]      derivation/proof dependency
+-P(a)                 retract previously asserted state
+{ ... }               branch/context scope
+```
+
+The key distinction is between **logical content** and **reasoning-control state**.
+
+MSP-R0 currently implements only facts and rules. Goals are supplied externally by the benchmark, and proof dependencies are produced by the reference executor. We should add more operations only when experiments demonstrate a need.
+
+## Boolean logic is necessary but not sufficient
+
+Boolean composition gives the core operators:
+
+```text
+NOT
+AND
+OR
+IMPLIES
+```
+
+But useful model reasoning also requires binding predicates to entities and variables:
+
+```text
+active(worker_7)
+blocked(worker_7)
+active(?x)&!blocked(?x)=>schedulable(?x)
+```
+
+Therefore the useful minimum is closer to a tiny predicate-logic / logic-programming IR than a propositional bit language.
+
+R0 intentionally supports conjunction and implication but not arbitrary disjunction. General OR introduces branching/search semantics; it should be added only with an explicit benchmark showing that the simpler Horn fragment is insufficient.
